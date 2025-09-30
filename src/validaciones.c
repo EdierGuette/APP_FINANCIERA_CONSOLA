@@ -135,7 +135,7 @@ int validar_fecha_expiracion(const char *fecha)
     if (fecha[2] != '/')
         return 0;
 
-    // Validar que los demás sean dígitos (nada de espacios ni símbolos)
+    // Validar que los demás sean dígitos
     if (!isdigit((unsigned char)fecha[0]) ||
         !isdigit((unsigned char)fecha[1]) ||
         !isdigit((unsigned char)fecha[3]) ||
@@ -146,24 +146,41 @@ int validar_fecha_expiracion(const char *fecha)
 
     // Convertir a números
     int mes = (fecha[0] - '0') * 10 + (fecha[1] - '0');
-    int ano = (fecha[3] - '0') * 10 + (fecha[4] - '0');
+    int ano_2digitos = (fecha[3] - '0') * 10 + (fecha[4] - '0');
 
-    // Mes debe estar entre 1 y 12
+    // Validar mes (1-12)
     if (mes < 1 || mes > 12)
+        return 0;
+
+    // Rechazar fechas absurdas como 00/00
+    if (mes == 0 || ano_2digitos == 0)
         return 0;
 
     // Obtener fecha actual
     time_t t = time(NULL);
     struct tm *tm_info = localtime(&t);
-    int ano_actual = tm_info->tm_year % 100; // últimos 2 dígitos del año
+
+    int ano_actual_completo = tm_info->tm_year + 1900;
     int mes_actual = tm_info->tm_mon + 1;
 
-    // Año no puede ser menor al actual
-    if (ano < ano_actual)
+    // Calcular año completo (manejo del siglo)
+    int siglo_base = (ano_actual_completo / 100) * 100;
+    int ano_completo = siglo_base + ano_2digitos;
+
+    // Si el año de 2 dígitos es menor que el año actual de 2 dígitos,
+    // asumimos que es del siguiente siglo
+    if (ano_2digitos < (ano_actual_completo % 100))
+    {
+        ano_completo += 100;
+    }
+
+    // Validar que no sea mayor a 10 años en el futuro
+    int ano_limite = ano_actual_completo + 10;
+    if (ano_completo > ano_limite)
         return 0;
 
-    // Si es el mismo año, el mes no puede estar vencido
-    if (ano == ano_actual && mes < mes_actual)
+    // Si es el año actual, validar que el mes no esté vencido
+    if (ano_completo == ano_actual_completo && mes < mes_actual)
         return 0;
 
     return 1; // Fecha válida
