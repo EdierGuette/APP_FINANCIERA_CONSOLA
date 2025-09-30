@@ -107,13 +107,13 @@ int validar_cvv(const char *cvv)
 {
     int longitud = strlen(cvv);
 
-    // CVV debe tener exactamente 3 o 4 dígitos
+    // Validar longitud básica - EXACTA, no mínimo/máximo
     if (longitud != 3 && longitud != 4)
     {
         return 0;
     }
 
-    // Validar que todos los caracteres sean dígitos (nada de espacios ni caracteres especiales)
+    // Validar que todos los caracteres sean dígitos
     for (int i = 0; i < longitud; i++)
     {
         if (!isdigit((unsigned char)cvv[i]))
@@ -122,7 +122,7 @@ int validar_cvv(const char *cvv)
         }
     }
 
-    return 1; // válido
+    return 1;
 }
 
 int validar_fecha_expiracion(const char *fecha)
@@ -200,16 +200,21 @@ void identificar_franquicia(const char *pan, char *franquicia)
     {
         if (!isdigit((unsigned char)pan[i]))
         {
-            strcpy(franquicia, "Desconocida"); // Si hay caracteres raros, se rechaza
+            strcpy(franquicia, "Desconocida");
             return;
         }
     }
 
-    // Asegurarse de que tenga al menos 2 dígitos para evitar acceso inválido
     int longitud = strlen(pan);
+
+    // Obtener primeros dígitos según la longitud disponible
     int primer_digito = pan[0] - '0';
     int primeros_dos = (longitud >= 2) ? ((pan[0] - '0') * 10 + (pan[1] - '0')) : -1;
+    int primeros_tres = (longitud >= 3) ? (primeros_dos * 10 + (pan[2] - '0')) : -1;
+    int primeros_cuatro = (longitud >= 4) ? (primeros_tres * 10 + (pan[3] - '0')) : -1;
+    int primeros_seis = (longitud >= 6) ? (primeros_cuatro * 100 + ((pan[4] - '0') * 10) + (pan[5] - '0')) : -1;
 
+    // Heurística mejorada según estándares actuales
     if (primer_digito == 4)
     {
         strcpy(franquicia, "Visa");
@@ -222,17 +227,24 @@ void identificar_franquicia(const char *pan, char *franquicia)
     {
         strcpy(franquicia, "American Express");
     }
-    else if (primeros_dos >= 60 && primeros_dos <= 65)
-    {
-        strcpy(franquicia, "Discover");
-    }
-    else if (primer_digito == 3)
+    else if (primer_digito == 3 && primeros_dos >= 30 && primeros_dos <= 39)
     {
         strcpy(franquicia, "Diners Club");
     }
-    else if (primer_digito == 6)
+    else if (primer_digito == 6 && (primeros_dos == 65 ||
+                                    primeros_cuatro == 6011 ||
+                                    (primeros_tres >= 644 && primeros_tres <= 649) ||
+                                    (primeros_seis >= 622126 && primeros_seis <= 622925)))
     {
         strcpy(franquicia, "Discover");
+    }
+    else if (primeros_dos == 35)
+    {
+        strcpy(franquicia, "JCB");
+    }
+    else if (primeros_dos == 62)
+    {
+        strcpy(franquicia, "UnionPay");
     }
     else
     {
@@ -242,7 +254,7 @@ void identificar_franquicia(const char *pan, char *franquicia)
 
 int validar_tarjeta_completa(const char *pan, const char *cvv, const char *fecha, char *franquicia)
 {
-    // 🔹 Validar que ningún campo esté vacío o nulo
+    //  Validar que ningún campo esté vacío o nulo
     if (!pan || !cvv || !fecha || !franquicia)
     {
         return 0;
@@ -252,32 +264,73 @@ int validar_tarjeta_completa(const char *pan, const char *cvv, const char *fecha
         return 0;
     }
 
-    // 🔹 Validar PAN (número de tarjeta)
+    //  Validar PAN (número de tarjeta)
     if (!validar_pan(pan))
     {
         return 0;
     }
 
-    // 🔹 Validar CVV
+    //  Validar CVV
     if (!validar_cvv(cvv))
     {
         return 0;
     }
 
-    // 🔹 Validar fecha de expiración
+    //  Validar fecha de expiración
     if (!validar_fecha_expiracion(fecha))
     {
         return 0;
     }
 
-    // 🔹 Identificar franquicia de la tarjeta
+    //  Identificar franquicia de la tarjeta
     identificar_franquicia(pan, franquicia);
 
-    // 🔹 Rechazar franquicia desconocida
+    //  Rechazar franquicia desconocida
     if (strcmp(franquicia, "Desconocida") == 0)
     {
         return 0;
     }
 
-    return 1; // ✅ Todo válido
+    return 1; //  Todo válido
+}
+int validar_cvv_segun_franquicia(const char *cvv, const char *franquicia)
+{
+    int longitud = strlen(cvv);
+
+    // Validar que todos los caracteres sean dígitos
+    for (int i = 0; i < longitud; i++)
+    {
+        if (!isdigit((unsigned char)cvv[i]))
+        {
+            return 0;
+        }
+    }
+
+    // Validar longitud EXACTA según franquicia
+    if (strcmp(franquicia, "American Express") == 0)
+    {
+        // American Express usa CVV de 4 dígitos EXACTOS
+        if (longitud != 4)
+        {
+            return 0;
+        }
+    }
+    else if (strcmp(franquicia, "Desconocida") != 0)
+    {
+        // Otras franquicias (Visa, Mastercard, etc.) usan CVV de 3 dígitos EXACTOS
+        if (longitud != 3)
+        {
+            return 0;
+        }
+    }
+    else
+    {
+        // Para franquicia desconocida, aceptar SOLO 3 o 4 dígitos
+        if (longitud != 3 && longitud != 4)
+        {
+            return 0;
+        }
+    }
+
+    return 1; // válido
 }

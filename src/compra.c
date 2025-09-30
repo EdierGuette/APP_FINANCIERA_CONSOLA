@@ -56,6 +56,7 @@ int capturar_datos_compra(Transaccion *transaccion)
 {
     char monto_str[20];
     char input_buffer[50]; // Buffer para fgets
+    char franquicia_temp[20];
 
     printf("Ingrese 'q' en cualquier momento para cancelar\n\n");
     printf("=== NUEVA COMPRA ===\n\n");
@@ -141,12 +142,18 @@ int capturar_datos_compra(Transaccion *transaccion)
 
         if (validar_pan(transaccion->pan))
         {
+            // Identificar franquicia después de validar PAN
+            identificar_franquicia(transaccion->pan, franquicia_temp);
+            strncpy(transaccion->franquicia, franquicia_temp, sizeof(transaccion->franquicia) - 1);
+            transaccion->franquicia[sizeof(transaccion->franquicia) - 1] = '\0';
+
+            printf("Tarjeta detectada: %s\n", transaccion->franquicia);
             break;
         }
         printf("Numero de tarjeta no valido.\n");
     } while (1);
 
-    // CVV usando fgets
+    // CVV usando fgets - AHORA VALIDADO SEGÚN FRANQUICIA
     do
     {
         printf("CVV: ");
@@ -173,14 +180,30 @@ int capturar_datos_compra(Transaccion *transaccion)
             return 0;
         }
 
+        // VALIDAR ANTES de copiar al struct
+        if (!validar_cvv_segun_franquicia(input_buffer, transaccion->franquicia))
+        {
+            // Mensaje de error específico según la franquicia
+            if (strcmp(transaccion->franquicia, "American Express") == 0)
+            {
+                printf("CVV no valido. American Express requiere exactamente 4 digitos.\n");
+            }
+            else if (strcmp(transaccion->franquicia, "Desconocida") != 0)
+            {
+                printf("CVV no valido. %s requiere exactamente 3 digitos.\n", transaccion->franquicia);
+            }
+            else
+            {
+                printf("CVV no valido. Debe tener exactamente 3 o 4 digitos.\n");
+            }
+            continue;
+        }
+
+        // Solo si es válido, copiar al struct
         strncpy(transaccion->cvv, input_buffer, sizeof(transaccion->cvv) - 1);
         transaccion->cvv[sizeof(transaccion->cvv) - 1] = '\0';
+        break;
 
-        if (validar_cvv(transaccion->cvv))
-        {
-            break;
-        }
-        printf("CVV no valido.\n");
     } while (1);
 
     // FECHA usando fgets
