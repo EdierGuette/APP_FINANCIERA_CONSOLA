@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <string.h>
+#include <ctype.h>
 #include "reimpresion.h"
 #include "utilidades.h"
 #include "transacciones.h"
@@ -59,6 +60,8 @@ void ejecutar_reimpresion(SistemaFinanciero *sistema)
 
         opcion = getchar();
         limpiar_buffer_entrada();
+        // Normalizar a minúscula
+        opcion = tolower((unsigned char)opcion);
 
         switch (opcion)
         {

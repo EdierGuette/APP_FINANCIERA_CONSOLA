@@ -52,6 +52,7 @@ void ejecutar_compra(SistemaFinanciero *sistema)
 
     presionar_para_continuar();
 }
+
 int capturar_datos_compra(Transaccion *transaccion)
 {
     char monto_str[20];

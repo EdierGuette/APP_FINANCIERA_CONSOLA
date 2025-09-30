@@ -33,6 +33,26 @@ void ejecutar_menu_principal(SistemaFinanciero *sistema)
         if (fgets(buffer, sizeof(buffer), stdin))
         {
             eliminar_salto_linea(buffer);
+
+            // VALIDAR QUE SEA SOLO DÍGITOS
+            int es_valido = 1;
+            for (int i = 0; buffer[i] != '\0'; i++)
+            {
+                if (!isdigit((unsigned char)buffer[i]))
+                {
+                    es_valido = 0;
+                    break;
+                }
+            }
+
+            // Si no es válido, mostrar error y continuar
+            if (!es_valido)
+            {
+                printf("Opcion no valida. Solo se permiten numeros.\n");
+                presionar_para_continuar();
+                continue;
+            }
+
             opcion = atoi(buffer);
 
             limpiar_consola();
