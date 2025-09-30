@@ -110,7 +110,7 @@ int capturar_datos_compra(Transaccion *transaccion)
         printf("Monto no valido. Intente nuevamente.\n");
     } while (1);
 
-    // PAN usando fgets
+    // PAN usando fgets - CON VALIDACIÓN MEJORADA
     do
     {
         printf("Numero de tarjeta: ");
@@ -137,20 +137,32 @@ int capturar_datos_compra(Transaccion *transaccion)
             return 0;
         }
 
+        // PRIMERO identificar la franquicia con el input completo
+        identificar_franquicia(input_buffer, franquicia_temp);
+
+        // LUEGO validar longitud específica según franquicia
+        if (!validar_longitud_segun_franquicia(input_buffer, franquicia_temp))
+        {
+            printf("Numero de tarjeta no valido. Longitud incorrecta para %s.\n", franquicia_temp);
+            continue;
+        }
+
+        // FINALMENTE validar el PAN (dígitos y algoritmo Luhn)
+        if (!validar_pan(input_buffer))
+        {
+            printf("Numero de tarjeta no valido.\n");
+            continue;
+        }
+
+        // Solo si todo es válido, copiar al struct
         strncpy(transaccion->pan, input_buffer, sizeof(transaccion->pan) - 1);
         transaccion->pan[sizeof(transaccion->pan) - 1] = '\0';
+        strncpy(transaccion->franquicia, franquicia_temp, sizeof(transaccion->franquicia) - 1);
+        transaccion->franquicia[sizeof(transaccion->franquicia) - 1] = '\0';
 
-        if (validar_pan(transaccion->pan))
-        {
-            // Identificar franquicia después de validar PAN
-            identificar_franquicia(transaccion->pan, franquicia_temp);
-            strncpy(transaccion->franquicia, franquicia_temp, sizeof(transaccion->franquicia) - 1);
-            transaccion->franquicia[sizeof(transaccion->franquicia) - 1] = '\0';
+        printf("Tarjeta detectada: %s\n", transaccion->franquicia);
+        break;
 
-            printf("Tarjeta detectada: %s\n", transaccion->franquicia);
-            break;
-        }
-        printf("Numero de tarjeta no valido.\n");
     } while (1);
 
     // CVV usando fgets - AHORA VALIDADO SEGÚN FRANQUICIA

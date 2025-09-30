@@ -188,7 +188,6 @@ int validar_fecha_expiracion(const char *fecha)
 
 void identificar_franquicia(const char *pan, char *franquicia)
 {
-    // Validar que PAN no sea NULL ni vacío
     if (pan == NULL || strlen(pan) < 1)
     {
         strcpy(franquicia, "Desconocida");
@@ -206,15 +205,12 @@ void identificar_franquicia(const char *pan, char *franquicia)
     }
 
     int longitud = strlen(pan);
-
-    // Obtener primeros dígitos según la longitud disponible
     int primer_digito = pan[0] - '0';
     int primeros_dos = (longitud >= 2) ? ((pan[0] - '0') * 10 + (pan[1] - '0')) : -1;
     int primeros_tres = (longitud >= 3) ? (primeros_dos * 10 + (pan[2] - '0')) : -1;
     int primeros_cuatro = (longitud >= 4) ? (primeros_tres * 10 + (pan[3] - '0')) : -1;
-    int primeros_seis = (longitud >= 6) ? (primeros_cuatro * 100 + ((pan[4] - '0') * 10) + (pan[5] - '0')) : -1;
 
-    // Heurística mejorada según estándares actuales
+    // Heurística mejorada y más precisa
     if (primer_digito == 4)
     {
         strcpy(franquicia, "Visa");
@@ -227,24 +223,19 @@ void identificar_franquicia(const char *pan, char *franquicia)
     {
         strcpy(franquicia, "American Express");
     }
-    else if (primer_digito == 3 && primeros_dos >= 30 && primeros_dos <= 39)
-    {
-        strcpy(franquicia, "Diners Club");
-    }
-    else if (primer_digito == 6 && (primeros_dos == 65 ||
-                                    primeros_cuatro == 6011 ||
-                                    (primeros_tres >= 644 && primeros_tres <= 649) ||
-                                    (primeros_seis >= 622126 && primeros_seis <= 622925)))
-    {
-        strcpy(franquicia, "Discover");
-    }
     else if (primeros_dos == 35)
     {
         strcpy(franquicia, "JCB");
     }
-    else if (primeros_dos == 62)
+    else if (primeros_dos == 36 || primeros_dos == 38 || primeros_dos == 39 ||
+             (primeros_tres >= 300 && primeros_tres <= 305))
     {
-        strcpy(franquicia, "UnionPay");
+        strcpy(franquicia, "Diners Club");
+    }
+    else if (primer_digito == 6 && (primeros_cuatro == 6011 || primeros_dos == 65 ||
+                                    (primeros_tres >= 644 && primeros_tres <= 649)))
+    {
+        strcpy(franquicia, "Discover");
     }
     else
     {
@@ -333,4 +324,42 @@ int validar_cvv_segun_franquicia(const char *cvv, const char *franquicia)
     }
 
     return 1; // válido
+}
+int validar_longitud_segun_franquicia(const char *pan, const char *franquicia)
+{
+    int longitud = strlen(pan);
+
+    if (strcmp(franquicia, "Visa") == 0)
+    {
+        // Visa: 13, 16, 19 dígitos
+        return (longitud == 13 || longitud == 16 || longitud == 19);
+    }
+    else if (strcmp(franquicia, "Mastercard") == 0)
+    {
+        // Mastercard: 16 dígitos
+        return (longitud == 16);
+    }
+    else if (strcmp(franquicia, "American Express") == 0)
+    {
+        // American Express: 15 dígitos
+        return (longitud == 15);
+    }
+    else if (strcmp(franquicia, "Discover") == 0)
+    {
+        // Discover: 16, 19 dígitos
+        return (longitud == 16 || longitud == 19);
+    }
+    else if (strcmp(franquicia, "Diners Club") == 0)
+    {
+        // Diners Club: 14, 16, 19 dígitos
+        return (longitud == 14 || longitud == 16 || longitud == 19);
+    }
+    else if (strcmp(franquicia, "JCB") == 0)
+    {
+        // JCB: 16, 17, 18, 19 dígitos
+        return (longitud >= 16 && longitud <= 19);
+    }
+
+    // Para franquicia desconocida, aceptar el rango general 13-19
+    return (longitud >= 13 && longitud <= 19);
 }

@@ -9,5 +9,6 @@ int validar_fecha_expiracion(const char *fecha);
 void identificar_franquicia(const char *pan, char *franquicia);
 int validar_tarjeta_completa(const char *pan, const char *cvv, const char *fecha, char *franquicia);
 int validar_cvv_segun_franquicia(const char *cvv, const char *franquicia);
+int validar_longitud_segun_franquicia(const char *pan, const char *franquicia);
 
 #endif
