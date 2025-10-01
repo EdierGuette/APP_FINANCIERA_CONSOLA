@@ -4,6 +4,34 @@
 #include "anulacion.h"
 #include "utilidades.h"
 #include "transacciones.h"
+#include "validaciones.h"
+
+// Función auxiliar para validar formato de referencia
+int validar_formato_referencia(const char *referencia)
+{
+    // Debe empezar con "REF" seguido de 6 dígitos
+    if (strlen(referencia) != REF_LENGTH - 1)
+    {
+        return 0;
+    }
+
+    // Verificar que empiece con "REF"
+    if (strncmp(referencia, "REF", 3) != 0)
+    {
+        return 0;
+    }
+
+    // Verificar que los últimos 6 caracteres sean dígitos
+    for (int i = 3; i < 9; i++)
+    {
+        if (!isdigit((unsigned char)referencia[i]))
+        {
+            return 0;
+        }
+    }
+
+    return 1;
+}
 
 void ejecutar_anulacion(SistemaFinanciero *sistema)
 {
@@ -15,52 +43,65 @@ void ejecutar_anulacion(SistemaFinanciero *sistema)
     }
 
     char referencia[REF_LENGTH];
-    char pan_verificacion[10];
-    char cvv_verificacion[10];
+    char pan_verificacion[20];
+    char cvv_verificacion[5];
     char opcion[10];
+    char input_buffer[50];
+    char franquicia_temp[20];
 
     printf("=== ANULACION DE COMPRA ===\n\n");
     printf("Ingrese 'q' en cualquier momento para cancelar\n\n");
 
-    printf("Numero de referencia: ");
-    if (!fgets(referencia, sizeof(referencia), stdin))
+    // REFERENCIA con validación mejorada
+    do
     {
-        printf("Error al leer referencia.\n");
-        presionar_para_continuar();
-        return;
-    }
-    eliminar_salto_linea(referencia);
+        printf("Numero de referencia (formato REF000001): ");
+        if (!fgets(input_buffer, sizeof(input_buffer), stdin))
+        {
+            printf("Error al leer referencia.\n");
+            presionar_para_continuar();
+            return;
+        }
+        eliminar_salto_linea(input_buffer);
 
-    // Verificar si quiere cancelar
-    if (strcmp(referencia, "q") == 0 || strcmp(referencia, "Q") == 0)
-    {
-        printf("Anulacion cancelada por el usuario.\n");
-        presionar_para_continuar();
-        return;
-    }
+        if (strcmp(input_buffer, "q") == 0 || strcmp(input_buffer, "Q") == 0)
+        {
+            printf("Anulacion cancelada por el usuario.\n");
+            presionar_para_continuar();
+            return;
+        }
+
+        if (!validar_formato_referencia(input_buffer))
+        {
+            printf("ERROR: Formato de referencia invalido. Debe ser REF seguido de 6 digitos (ej: REF000001).\n");
+            continue;
+        }
+
+        strncpy(referencia, input_buffer, sizeof(referencia) - 1);
+        referencia[sizeof(referencia) - 1] = '\0';
+        break;
+
+    } while (1);
 
     Transaccion *transaccion = buscar_transaccion(sistema, referencia);
 
-    // **QUITAR EL DEBUG O MOVERLO DESPUÉS DE LAS VALIDACIONES**
     if (!transaccion)
     {
         printf("ERROR: Numero de referencia no existe.\n");
 
-        // DEBUG SOLO SI NO SE ENCUENTRA (opcional)
         printf("\nReferencias existentes:\n");
         for (int i = 0; i < sistema->cantidad; i++)
         {
-            printf("- %s (%s)\n",
-                   sistema->transacciones[i].numero_referencia,
-                   sistema->transacciones[i].tipo == COMPRA ? "COMPRA" : "ANULADA");
+            if (sistema->transacciones[i].tipo == COMPRA)
+            {
+                printf("- %s\n", sistema->transacciones[i].numero_referencia);
+            }
         }
         printf("\n");
-
         presionar_para_continuar();
         return;
     }
 
-    // **ESTA VALIDACIÓN SÍ DEBERÍA FUNCIONAR**
     if (transaccion->tipo == ANULACION)
     {
         printf("ERROR: La transaccion %s ya esta ANULADA.\n", transaccion->numero_referencia);
@@ -68,109 +109,162 @@ void ejecutar_anulacion(SistemaFinanciero *sistema)
         return;
     }
 
-    // DEBUG: Mostrar que encontró una transacción VÁLIDA
-    printf("\n=== TRANSACCION ENCONTRADA ===\n");
-    printf("Referencia: %s\n", transaccion->numero_referencia);
-    printf("Tipo: COMPRA (vigente)\n");
-    printf("Monto: $%ld.%02ld\n", transaccion->monto / 100, transaccion->monto % 100);
-    printf("==============================\n\n");
-
     // Mostrar información de la transacción
     char monto_str[20];
     char pan_enmascarado[20];
 
-    // Usar formatear_monto para mostrar correctamente
     formatear_monto(transaccion->monto, monto_str, sizeof(monto_str));
     enmascarar_pan(transaccion->pan, pan_enmascarado);
 
-    printf("=== INFORMACION DE LA TRANSACCION ===\n");
+    printf("\n=== INFORMACION DE LA TRANSACCION ===\n");
+    printf("Referencia: %s\n", transaccion->numero_referencia);
     printf("Monto: %s\n", monto_str);
     printf("PAN: %s\n", pan_enmascarado);
     printf("Franquicia: %s\n", transaccion->franquicia);
     printf("=====================================\n\n");
 
-    // Limpiar buffer
-    limpiar_buffer_entrada();
-
-    printf("Ultimos 4 digitos del PAN: ");
-    if (!fgets(pan_verificacion, sizeof(pan_verificacion), stdin))
-    {
-        printf("Error al leer PAN.\n");
-        presionar_para_continuar();
-        return;
-    }
-    eliminar_salto_linea(pan_verificacion);
-
-    if (strcmp(pan_verificacion, "q") == 0 || strcmp(pan_verificacion, "Q") == 0)
-    {
-        printf("Anulacion cancelada por el usuario.\n");
-        presionar_para_continuar();
-        return;
-    }
-
-    printf("CVV: ");
-    if (!fgets(cvv_verificacion, sizeof(cvv_verificacion), stdin))
-    {
-        printf("Error al leer CVV.\n");
-        presionar_para_continuar();
-        return;
-    }
-    eliminar_salto_linea(cvv_verificacion);
-
-    if (strcmp(cvv_verificacion, "q") == 0 || strcmp(cvv_verificacion, "Q") == 0)
-    {
-        printf("Anulacion cancelada por el usuario.\n");
-        presionar_para_continuar();
-        return;
-    }
-
-    // Validaciones del PAN
-    if (strlen(pan_verificacion) != 4)
-    {
-        printf("ERROR: Debe ingresar exactamente 4 digitos.\n");
-        presionar_para_continuar();
-        return;
-    }
-
-    for (int i = 0; i < 4; i++)
-    {
-        if (!isdigit(pan_verificacion[i]))
-        {
-            printf("ERROR: Solo se permiten digitos numericos.\n");
-            presionar_para_continuar();
-            return;
-        }
-    }
-
+    // OBTENER los últimos 4 dígitos reales del PAN de la transacción
     int pan_longitud = strlen(transaccion->pan);
     char ultimos_cuatro_real[5];
     strncpy(ultimos_cuatro_real, transaccion->pan + pan_longitud - 4, 4);
     ultimos_cuatro_real[4] = '\0';
 
-    if (strcmp(ultimos_cuatro_real, pan_verificacion) != 0)
+    // VERIFICACIÓN DE PAN (últimos 4 dígitos) - VALIDAR INMEDIATAMENTE
+    do
     {
-        printf("ERROR: Verificacion de PAN fallida.\n");
-        printf("Se esperaba: %s\n", ultimos_cuatro_real);
-        presionar_para_continuar();
-        return;
-    }
+        printf("Ultimos 4 digitos del PAN: ");
+        if (!fgets(input_buffer, sizeof(input_buffer), stdin))
+        {
+            printf("Error al leer PAN.\n");
+            presionar_para_continuar();
+            return;
+        }
+        eliminar_salto_linea(input_buffer);
 
-    if (strcmp(transaccion->cvv, cvv_verificacion) != 0)
-    {
-        printf("ERROR: Verificacion de CVV fallida.\n");
-        presionar_para_continuar();
-        return;
-    }
+        if (strcmp(input_buffer, "q") == 0 || strcmp(input_buffer, "Q") == 0)
+        {
+            printf("Anulacion cancelada por el usuario.\n");
+            presionar_para_continuar();
+            return;
+        }
 
-    // Confirmación final
-    printf("\n¿Esta seguro de anular la transaccion %s? (s/n): ", transaccion->numero_referencia);
-    if (!fgets(opcion, sizeof(opcion), stdin))
+        // Validar longitud exacta de 4 dígitos
+        int longitud = strlen(input_buffer);
+        if (longitud != 4)
+        {
+            printf("ERROR: Debe ingresar exactamente 4 digitos.\n");
+            continue;
+        }
+
+        // Validar que sean solo dígitos
+        int es_valido = 1;
+        for (int i = 0; i < longitud; i++)
+        {
+            if (!isdigit((unsigned char)input_buffer[i]))
+            {
+                es_valido = 0;
+                break;
+            }
+        }
+
+        if (!es_valido)
+        {
+            printf("ERROR: Solo se permiten digitos numericos.\n");
+            continue;
+        }
+
+        // ✅ VALIDAR INMEDIATAMENTE si coincide con los últimos 4 dígitos reales
+        if (strcmp(ultimos_cuatro_real, input_buffer) != 0)
+        {
+            printf("ERROR: Los ultimos 4 digitos no coinciden. Intente nuevamente.\n");
+            continue; // ❌ NO pasa al CVV, vuelve a pedir el PAN
+        }
+
+        // Si llegó aquí, el PAN es correcto
+        strncpy(pan_verificacion, input_buffer, sizeof(pan_verificacion) - 1);
+        pan_verificacion[sizeof(pan_verificacion) - 1] = '\0';
+        break;
+
+    } while (1);
+
+    // VERIFICACIÓN DE CVV - SOLO SE EJECUTA SI EL PAN FUE CORRECTO
+    do
     {
-        printf("Error al leer opcion.\n");
-        presionar_para_continuar();
-        return;
-    }
-    eliminar_salto_linea(opcion);
+        printf("CVV: ");
+        if (!fgets(input_buffer, sizeof(input_buffer), stdin))
+        {
+            printf("Error al leer CVV.\n");
+            presionar_para_continuar();
+            return;
+        }
+        eliminar_salto_linea(input_buffer);
+
+        if (strcmp(input_buffer, "q") == 0 || strcmp(input_buffer, "Q") == 0)
+        {
+            printf("Anulacion cancelada por el usuario.\n");
+            presionar_para_continuar();
+            return;
+        }
+
+        // USAR LA FUNCIÓN EXISTENTE validar_cvv_segun_franquicia
+        if (!validar_cvv_segun_franquicia(input_buffer, transaccion->franquicia))
+        {
+            if (strcmp(transaccion->franquicia, "American Express") == 0)
+            {
+                printf("ERROR: American Express requiere 4 digitos para CVV.\n");
+            }
+            else if (strcmp(transaccion->franquicia, "Desconocida") != 0)
+            {
+                printf("ERROR: %s requiere 3 digitos para CVV.\n", transaccion->franquicia);
+            }
+            else
+            {
+                printf("ERROR: CVV debe tener 3 o 4 digitos.\n");
+            }
+            continue;
+        }
+
+        // ✅ VALIDAR INMEDIATAMENTE si coincide con el CVV real
+        if (strcmp(transaccion->cvv, input_buffer) != 0)
+        {
+            printf("ERROR: El CVV no coincide. Intente nuevamente.\n");
+            continue; // ❌ Vuelve a pedir el CVV
+        }
+
+        strncpy(cvv_verificacion, input_buffer, sizeof(cvv_verificacion) - 1);
+        cvv_verificacion[sizeof(cvv_verificacion) - 1] = '\0';
+        break;
+
+    } while (1);
+
+    // Confirmación final - SOLO LLEGA AQUÍ SI AMBAS VALIDACIONES FUERON EXITOSAS
+    do
+    {
+        printf("\n¿Esta seguro de anular la transaccion %s? (s/n): ", transaccion->numero_referencia);
+        if (!fgets(opcion, sizeof(opcion), stdin))
+        {
+            printf("Error al leer opcion.\n");
+            presionar_para_continuar();
+            return;
+        }
+        eliminar_salto_linea(opcion);
+
+        if (strcmp(opcion, "q") == 0 || strcmp(opcion, "Q") == 0)
+        {
+            printf("Anulacion cancelada por el usuario.\n");
+            presionar_para_continuar();
+            return;
+        }
+
+        if (opcion[0] == 's' || opcion[0] == 'S' || opcion[0] == 'n' || opcion[0] == 'N')
+        {
+            break;
+        }
+        else
+        {
+            printf("Opcion no valida. Ingrese 's' para si o 'n' para no.\n");
+        }
+    } while (1);
 
     if (opcion[0] == 's' || opcion[0] == 'S')
     {

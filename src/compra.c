@@ -212,6 +212,20 @@ int capturar_datos_compra(Transaccion *transaccion)
             continue;
         }
 
+        // AQUÍ PONES LA VALIDACIÓN PARA GUARDAR CORRECTAMENTE
+        if (strcmp(franquicia_temp, "American Express") == 0)
+        {
+            // Para American Express, tomar solo los primeros 4 dígitos
+            strncpy(transaccion->cvv, input_buffer, 4);
+            transaccion->cvv[4] = '\0';
+        }
+        else
+        {
+            // Para otras tarjetas, tomar solo los primeros 3 dígitos
+            strncpy(transaccion->cvv, input_buffer, 3);
+            transaccion->cvv[3] = '\0';
+        }
+
         // Solo si es válido, copiar al struct
         strncpy(transaccion->cvv, input_buffer, sizeof(transaccion->cvv) - 1);
         transaccion->cvv[sizeof(transaccion->cvv) - 1] = '\0';

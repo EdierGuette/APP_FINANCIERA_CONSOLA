@@ -17,7 +17,7 @@ typedef struct
     char numero_referencia[REF_LENGTH];
     long monto;
     char pan[PAN_LENGTH + 1];
-    char cvv[4];
+    char cvv[5];
     char fecha_expiracion[FECHA_LENGTH];
     TipoTransaccion tipo;
     char franquicia[20];
