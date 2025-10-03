@@ -37,6 +37,7 @@ void ejecutar_anulacion(SistemaFinanciero *sistema)
 {
     if (sistema->cantidad == 0)
     {
+        printf("=== ANULACION DE COMPRA ===\n\n");
         printf("No hay transacciones para anular.\n");
         presionar_para_continuar();
         return;
@@ -45,9 +46,7 @@ void ejecutar_anulacion(SistemaFinanciero *sistema)
     char referencia[REF_LENGTH];
     char pan_verificacion[20];
     char cvv_verificacion[5];
-    char opcion[10];
     char input_buffer[50];
-    char franquicia_temp[20];
 
     printf("=== ANULACION DE COMPRA ===\n\n");
     printf("Ingrese 'q' en cualquier momento para cancelar\n\n");
@@ -173,11 +172,11 @@ void ejecutar_anulacion(SistemaFinanciero *sistema)
             continue;
         }
 
-        // ✅ VALIDAR INMEDIATAMENTE si coincide con los últimos 4 dígitos reales
+        //  VALIDAR INMEDIATAMENTE si coincide con los últimos 4 dígitos reales
         if (strcmp(ultimos_cuatro_real, input_buffer) != 0)
         {
             printf("ERROR: Los ultimos 4 digitos no coinciden. Intente nuevamente.\n");
-            continue; // ❌ NO pasa al CVV, vuelve a pedir el PAN
+            continue; // NO pasa al CVV, vuelve a pedir el PAN
         }
 
         // Si llegó aquí, el PAN es correcto
@@ -224,11 +223,11 @@ void ejecutar_anulacion(SistemaFinanciero *sistema)
             continue;
         }
 
-        // ✅ VALIDAR INMEDIATAMENTE si coincide con el CVV real
+        // VALIDAR INMEDIATAMENTE si coincide con el CVV real
         if (strcmp(transaccion->cvv, input_buffer) != 0)
         {
             printf("ERROR: El CVV no coincide. Intente nuevamente.\n");
-            continue; // ❌ Vuelve a pedir el CVV
+            continue; // Vuelve a pedir el CVV
         }
 
         strncpy(cvv_verificacion, input_buffer, sizeof(cvv_verificacion) - 1);
@@ -238,35 +237,9 @@ void ejecutar_anulacion(SistemaFinanciero *sistema)
     } while (1);
 
     // Confirmación final - SOLO LLEGA AQUÍ SI AMBAS VALIDACIONES FUERON EXITOSAS
-    do
-    {
-        printf("\n¿Esta seguro de anular la transaccion %s? (s/n): ", transaccion->numero_referencia);
-        if (!fgets(opcion, sizeof(opcion), stdin))
-        {
-            printf("Error al leer opcion.\n");
-            presionar_para_continuar();
-            return;
-        }
-        eliminar_salto_linea(opcion);
+    char confirmacion = validar_confirmacion_sn("Esta seguro de anular la transaccion?");
 
-        if (strcmp(opcion, "q") == 0 || strcmp(opcion, "Q") == 0)
-        {
-            printf("Anulacion cancelada por el usuario.\n");
-            presionar_para_continuar();
-            return;
-        }
-
-        if (opcion[0] == 's' || opcion[0] == 'S' || opcion[0] == 'n' || opcion[0] == 'N')
-        {
-            break;
-        }
-        else
-        {
-            printf("Opcion no valida. Ingrese 's' para si o 'n' para no.\n");
-        }
-    } while (1);
-
-    if (opcion[0] == 's' || opcion[0] == 'S')
+    if (confirmacion == 's')
     {
         transaccion->tipo = ANULACION;
         printf("Transaccion ANULADA exitosamente.\n");

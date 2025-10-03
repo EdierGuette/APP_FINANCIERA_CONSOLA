@@ -10,5 +10,7 @@ void identificar_franquicia(const char *pan, char *franquicia);
 int validar_tarjeta_completa(const char *pan, const char *cvv, const char *fecha, char *franquicia);
 int validar_cvv_segun_franquicia(const char *cvv, const char *franquicia);
 int validar_longitud_segun_franquicia(const char *pan, const char *franquicia);
+int validar_confirmacion_sn(const char *mensaje);
+char validar_navegacion_reimpresion(int indice_actual, int total_transacciones);
 
 #endif

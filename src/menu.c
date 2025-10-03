@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <ctype.h>
 #include "menu.h"
 #include "utilidades.h"
 #include "compra.h"
@@ -7,6 +8,8 @@
 #include "cierre.h"
 #include "reimpresion.h"
 #include "reporte.h"
+#include "validaciones.h"
+#include "transacciones.h"
 
 void mostrar_menu_principal()
 {
@@ -24,8 +27,10 @@ void ejecutar_menu_principal(SistemaFinanciero *sistema)
 {
     int opcion;
     char buffer[10];
+    int salir = 0;
+    char confirmacion;
 
-    do
+        do
     {
         limpiar_consola();
         mostrar_menu_principal();
@@ -75,7 +80,19 @@ void ejecutar_menu_principal(SistemaFinanciero *sistema)
                 ejecutar_reporte(sistema);
                 break;
             case 6:
-                printf("Saliendo del sistema...\n");
+                // Se reutiliza la misma función de confirmación
+                confirmacion = validar_confirmacion_sn("Esta seguro que desea salir del sistema?");
+
+                if (confirmacion == 's')
+                {
+                    printf("Saliendo del sistema...\n");
+                    salir = 1;
+                }
+                else
+                {
+                    printf("Continuando en el sistema...\n");
+                    presionar_para_continuar();
+                }
                 break;
             default:
                 printf("Opcion no valida. Intente nuevamente.\n");
@@ -83,5 +100,5 @@ void ejecutar_menu_principal(SistemaFinanciero *sistema)
                 break;
             }
         }
-    } while (opcion != 6);
+    } while (!salir);
 }

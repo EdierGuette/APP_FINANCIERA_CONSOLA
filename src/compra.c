@@ -69,17 +69,17 @@ int capturar_datos_compra(Transaccion *transaccion)
 
         if (fgets(input_buffer, sizeof(input_buffer), stdin) == NULL)
         {
-            printf("Error al leer entrada. Desea cancelar? (s/n): ");
-            if (fgets(input_buffer, sizeof(input_buffer), stdin) == NULL)
+            printf("Error al leer entrada. ");
+            char confirmacion = validar_confirmacion_sn("Desea cancelar?");
+
+            if (confirmacion == 's')
             {
-                return 0;
+                return 0; // Usuario canceló
             }
-            eliminar_salto_linea(input_buffer);
-            if (input_buffer[0] == 's' || input_buffer[0] == 'S')
+            else
             {
-                return 0;
+                continue; // Continuar con el bucle
             }
-            continue;
         }
 
         eliminar_salto_linea(input_buffer);
@@ -95,16 +95,8 @@ int capturar_datos_compra(Transaccion *transaccion)
 
         if (validar_monto(monto_str))
         {
-            // Convertir a centavos o a número
+            // Convertir a centavos
             long monto_centavos = convertir_monto_a_centavos(monto_str);
-
-            // Validar que el monto sea mayor que 0
-            if (monto_centavos <= 0)
-            {
-                printf("El monto debe ser mayor que 0. Intente nuevamente.\n");
-                continue;
-            }
-
             transaccion->monto = monto_centavos;
             break;
         }
@@ -118,17 +110,12 @@ int capturar_datos_compra(Transaccion *transaccion)
 
         if (fgets(input_buffer, sizeof(input_buffer), stdin) == NULL)
         {
-            printf("Error al leer entrada. Desea cancelar? (s/n): ");
-            if (fgets(input_buffer, sizeof(input_buffer), stdin) == NULL)
+            printf("Error al leer entrada. ");
+            if (validar_confirmacion_sn("Desea cancelar?") == 's')
             {
-                return 0;
+                return 0; // Usuario canceló
             }
-            eliminar_salto_linea(input_buffer);
-            if (input_buffer[0] == 's' || input_buffer[0] == 'S')
-            {
-                return 0;
-            }
-            continue;
+            continue; // Continuar con el bucle
         }
 
         eliminar_salto_linea(input_buffer);
@@ -173,19 +160,13 @@ int capturar_datos_compra(Transaccion *transaccion)
 
         if (fgets(input_buffer, sizeof(input_buffer), stdin) == NULL)
         {
-            printf("Error al leer entrada. Desea cancelar? (s/n): ");
-            if (fgets(input_buffer, sizeof(input_buffer), stdin) == NULL)
+            printf("Error al leer entrada. ");
+            if (validar_confirmacion_sn("Desea cancelar?") == 's')
             {
-                return 0;
+                return 0; // Usuario canceló
             }
-            eliminar_salto_linea(input_buffer);
-            if (input_buffer[0] == 's' || input_buffer[0] == 'S')
-            {
-                return 0;
-            }
-            continue;
+            continue; // Continuar con el bucle
         }
-
         eliminar_salto_linea(input_buffer);
 
         if (strcmp(input_buffer, "q") == 0 || strcmp(input_buffer, "Q") == 0)
@@ -240,17 +221,12 @@ int capturar_datos_compra(Transaccion *transaccion)
 
         if (fgets(input_buffer, sizeof(input_buffer), stdin) == NULL)
         {
-            printf("Error al leer entrada. Desea cancelar? (s/n): ");
-            if (fgets(input_buffer, sizeof(input_buffer), stdin) == NULL)
+            printf("Error al leer entrada. ");
+            if (validar_confirmacion_sn("Desea cancelar?") == 's')
             {
-                return 0;
+                return 0; // Usuario canceló
             }
-            eliminar_salto_linea(input_buffer);
-            if (input_buffer[0] == 's' || input_buffer[0] == 'S')
-            {
-                return 0;
-            }
-            continue;
+            continue; // Continuar con el bucle
         }
 
         eliminar_salto_linea(input_buffer);

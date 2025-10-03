@@ -52,8 +52,6 @@ long convertir_monto_a_centavos(const char *monto)
         *punto = '\0';
         dolares = atol(copia) * 100;
         centavos = atol(punto + 1);
-        if (centavos > 99)
-            centavos = 99;
     }
     else
     {

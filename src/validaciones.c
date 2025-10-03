@@ -2,7 +2,10 @@
 #include <string.h>
 #include <ctype.h>
 #include <time.h>
+#include <stdlib.h>
 #include "validaciones.h"
+#include "reimpresion.h"
+#include "utilidades.h"
 
 int validar_monto(const char *monto)
 {
@@ -10,13 +13,14 @@ int validar_monto(const char *monto)
     int punto_encontrado = 0;
     int digitos_despues_punto = 0;
     int digitos_antes_punto = 0;
+    int total_digitos = 0;
 
-    if (longitud == 0 || longitud > 12)
+    if (longitud == 0 || longitud > 13) // Máximo: 12 dígitos o 10+1punto+2decimales
     {
         return 0;
     }
 
-    // Verificar que el primer carácter sea un dígito (no punto)
+    // Verificar que el primer carácter sea un dígito
     if (!isdigit(monto[0]))
     {
         return 0;
@@ -34,24 +38,57 @@ int validar_monto(const char *monto)
                 return 0; // Punto al final
             punto_encontrado = 1;
         }
-        // Aquí se valida que NO se permitan espacios u otros caracteres
         else if (!isdigit((unsigned char)monto[i]))
         {
-            return 0; // Si no es dígito → inválido (espacios, letras, símbolos, etc.)
-        }
-        else if (punto_encontrado)
-        {
-            digitos_despues_punto++;
-            if (digitos_despues_punto > 2)
-                return 0; // Máximo 2 decimales
+            return 0; // Si no es dígito → inválido
         }
         else
         {
-            digitos_antes_punto++;
-            if (digitos_antes_punto > 12)
-                return 0; // Máximo 12 dígitos antes del punto
+            total_digitos++;
+            if (punto_encontrado)
+            {
+                digitos_despues_punto++;
+            }
+            else
+            {
+                digitos_antes_punto++;
+            }
         }
     }
+
+    // Validar máximo 12 dígitos en total
+    if (total_digitos > 12)
+    {
+        return 0;
+    }
+
+    // Si hay punto, debe tener exactamente 2 decimales
+    if (punto_encontrado && digitos_despues_punto != 2)
+    {
+        return 0;
+    }
+
+    // Si hay punto, máximo 10 dígitos enteros (10 + 2 = 12 total)
+    if (punto_encontrado && digitos_antes_punto > 10)
+    {
+        return 0;
+    }
+
+    // VALIDACIÓN NUEVA: Rechazar ceros 
+    int todos_ceros = 1;
+    for (int i = 0; i < longitud; i++)
+    {
+        if (monto[i] != '.' && monto[i] != '0')
+        {
+            todos_ceros = 0;
+            break;
+        }
+    }
+    if (todos_ceros)
+    {
+        return 0;
+    }
+
 
     return 1;
 }
@@ -362,4 +399,105 @@ int validar_longitud_segun_franquicia(const char *pan, const char *franquicia)
 
     // Para franquicia desconocida, aceptar el rango general 13-19
     return (longitud >= 13 && longitud <= 19);
+}
+
+// Función auxiliar para validar confirmación s/n
+int validar_confirmacion_sn(const char *mensaje)
+{
+    char input_buffer[50];
+    char opcion;
+
+    do
+    {
+        printf("%s (s/n): ", mensaje);
+        if (!fgets(input_buffer, sizeof(input_buffer), stdin))
+        {
+            printf("Error al leer opcion.\n");
+            continue;
+        }
+        eliminar_salto_linea(input_buffer);
+
+        // Validar que sea exactamente 1 carácter
+        if (strlen(input_buffer) != 1)
+        {
+            printf("Opcion no valida. Ingrese solamente 's' para si o 'n' para no.\n");
+            continue;
+        }
+
+        // Convertir a minúscula
+        opcion = tolower((unsigned char)input_buffer[0]);
+
+        if (opcion == 's' || opcion == 'n')
+        {
+            return opcion; // Retorna 's' o 'n'
+        }
+        else
+        {
+            printf("Opcion no valida. Ingrese solamente 's' para si o 'n' para no.\n");
+        }
+    } while (1);
+}
+
+// Función para validar navegación en reimpresión
+char validar_navegacion_reimpresion(int indice_actual, int total_transacciones)
+{
+    char input_buffer[50];
+    char opcion;
+
+    do
+    {
+        printf("Seleccione: ");
+        if (!fgets(input_buffer, sizeof(input_buffer), stdin))
+        {
+            printf("Error al leer opcion.\n");
+            continue;
+        }
+        eliminar_salto_linea(input_buffer);
+
+        // Validar que sea exactamente 1 carácter
+        if (strlen(input_buffer) != 1)
+        {
+            printf("Opcion no valida. ");
+            mostrar_opciones_navegacion(indice_actual, total_transacciones);
+            continue;
+        }
+
+        // Convertir a minúscula
+        opcion = tolower((unsigned char)input_buffer[0]);
+
+        // Validar opciones permitidas con mensajes específicos para límites
+        if (opcion == 'a')
+        {
+            if (indice_actual > 0)
+            {
+                return opcion;
+            }
+            else
+            {
+                printf("No hay mas transacciones hacia atras. ");
+                mostrar_opciones_navegacion(indice_actual, total_transacciones);
+            }
+        }
+        else if (opcion == 'd')
+        {
+            if (indice_actual < total_transacciones - 1)
+            {
+                return opcion;
+            }
+            else
+            {
+                printf("No hay mas transacciones hacia adelante. ");
+                mostrar_opciones_navegacion(indice_actual, total_transacciones);
+            }
+        }
+        else if (opcion == 'q')
+        {
+            return opcion;
+        }
+        else
+        {
+            printf("Opcion no valida. ");
+            mostrar_opciones_navegacion(indice_actual, total_transacciones);
+        }
+    } while (1);
 }

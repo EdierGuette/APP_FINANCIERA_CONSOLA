@@ -3,6 +3,7 @@
 #include "cierre.h"
 #include "utilidades.h"
 #include "transacciones.h"
+#include "validaciones.h"
 
 void mostrar_resumen(SistemaFinanciero *sistema)
 {
@@ -45,6 +46,7 @@ void ejecutar_cierre(SistemaFinanciero *sistema)
 {
     if (sistema->cantidad == 0)
     {
+        printf("=== RESUMEN DE CIERRE ===\n\n");
         printf("No hay transacciones para cerrar.\n");
         presionar_para_continuar();
         return;
@@ -52,26 +54,18 @@ void ejecutar_cierre(SistemaFinanciero *sistema)
 
     mostrar_resumen(sistema);
 
-    printf("¿Esta seguro de realizar el cierre? (s/n): ");
-    char respuesta[10];
-    if (fgets(respuesta, sizeof(respuesta), stdin))
-    {
-        eliminar_salto_linea(respuesta);
+    // Reutilizar la misma función de confirmación
+    char confirmacion = validar_confirmacion_sn("Esta seguro de realizar el cierre?");
 
-        if (respuesta[0] == 's' || respuesta[0] == 'S')
-        {
-            sistema->cantidad = 0;
-            sistema->siguiente_referencia = 1;
-            printf("Cierre realizado exitosamente.\n");
-        }
-        else
-        {
-            printf("Cierre cancelado.\n");
-        }
+    if (confirmacion == 's')
+    {
+        sistema->cantidad = 0;
+        sistema->siguiente_referencia = 1;
+        printf("Cierre realizado exitosamente.\n");
     }
     else
     {
-        printf("Error al leer respuesta.\n");
+        printf("Cierre cancelado.\n");
     }
 
     presionar_para_continuar();

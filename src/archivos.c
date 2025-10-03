@@ -29,7 +29,7 @@ int guardar_transacciones(SistemaFinanciero *sistema)
     // Guardar transacciones
     if (sistema->cantidad > 0)
     {
-        if (fwrite(sistema->transacciones, sizeof(Transaccion), sistema->cantidad, archivo) != sistema->cantidad)
+        if (fwrite(sistema->transacciones, sizeof(Transaccion), sistema->cantidad, archivo) != (size_t)sistema->cantidad)
         {
             fclose(archivo);
             return 0;
@@ -64,7 +64,7 @@ int cargar_transacciones(SistemaFinanciero *sistema)
     // Cargar transacciones
     if (sistema->cantidad > 0)
     {
-        if (fread(sistema->transacciones, sizeof(Transaccion), sistema->cantidad, archivo) != sistema->cantidad)
+        if (fread(sistema->transacciones, sizeof(Transaccion), sistema->cantidad, archivo) != (size_t)sistema->cantidad)
         {
             fclose(archivo);
             return 0;
